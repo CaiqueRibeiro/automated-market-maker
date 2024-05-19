@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 contract LiquidityPool is ERC20, ERC20Burnable, Ownable, ReentrancyGuard {
     error Lp_NonConstantProduct();
     error Lp_ShareTooSmall();
+    error Lp_ReceiveAmountToSmall(string message);
 
     ERC20 public s_token0;
     ERC20 public s_token1;
@@ -78,5 +79,26 @@ contract LiquidityPool is ERC20, ERC20Burnable, Ownable, ReentrancyGuard {
 
         _mint(msg.sender, shares);
         _update(s_reserve0 + _amount0, s_reserve1 + _amount1);
+    }
+
+    function withdraw(
+        uint256 _shares
+    ) external nonReentrant returns (uint256 amount0, uint256 amount1) {
+        uint256 bal0 = s_token0.balanceOf(address(this));
+        uint256 bal1 = s_token1.balanceOf(address(this));
+
+        uint256 totalSupply = totalSupply();
+        amount0 = (_shares * bal0) / totalSupply;
+        amount1 = (_shares * bal1) / totalSupply;
+
+        if (amount1 == 0 || amount1 == 0) {
+            revert Lp_ReceiveAmountToSmall("amount0 or amount1 == 0");
+        }
+
+        _burn(msg.sender, _shares);
+        _update(bal0 - amount0, bal1 - amount1);
+
+        s_token0.transfer(msg.sender, amount0);
+        s_token1.transfer(msg.sender, amount1);
     }
 }
