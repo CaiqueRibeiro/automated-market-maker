@@ -42,6 +42,12 @@ contract LiquidityPoolTest is Test {
 
         assert(share > 0);
         assert(share == 3872);
+
+        uint256 contractBalance0 = tokenIn.balanceOf(address(liquidityPool));
+        uint256 contractBalance1 = tokenOut.balanceOf(address(liquidityPool));
+
+        assert(contractBalance0 == 3000);
+        assert(contractBalance1 == 5000);
     }
 
     function testCannotDepositIfShareIsTooSmall() public {
