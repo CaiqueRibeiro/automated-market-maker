@@ -58,11 +58,47 @@ contract LiquidityPoolTest is Test {
 
         assert(contractBalance0 == 3000);
         assert(contractBalance1 == 5000);
+
+        uint256 reserve0 = liquidityPool.s_reserve0();
+        uint256 reserve1 = liquidityPool.s_reserve1();
+
+        assert(reserve0 == 3000);
+        assert(reserve1 == 5000);
     }
 
     function testCannotDepositIfShareIsTooSmall() public mintedUser allowed {
         vm.prank(LIQUIDITY_PROVIDER);
         vm.expectRevert(LiquidityPool.Lp_ShareTooSmall.selector);
         liquidityPool.deposit(0, TOKEN_OUT_AMOUNT);
+    }
+
+    // WITHDRAW
+    function testCanWithdraw() public mintedUser allowed {
+        vm.startPrank(LIQUIDITY_PROVIDER);
+        uint256 share = liquidityPool.deposit(
+            TOKEN_IN_AMOUNT,
+            TOKEN_OUT_AMOUNT
+        );
+        (uint256 amount1, uint256 amount2) = liquidityPool.withdraw(share);
+        vm.stopPrank();
+
+        assert(amount1 == TOKEN_IN_AMOUNT);
+        assert(amount2 == TOKEN_OUT_AMOUNT);
+
+        uint256 reserve0 = liquidityPool.s_reserve0();
+        uint256 reserve1 = liquidityPool.s_reserve1();
+
+        assert(reserve0 == 0);
+        assert(reserve1 == 0);
+    }
+
+    function testCannotWithdrawIfHasNotDepositEarlier()
+        public
+        mintedUser
+        allowed
+    {
+        vm.prank(LIQUIDITY_PROVIDER);
+        vm.expectRevert();
+        liquidityPool.withdraw(3000);
     }
 }
