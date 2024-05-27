@@ -11,6 +11,8 @@ contract LiquidityPoolTest is Test {
     LiquidityPool liquidityPool;
     TokenIn tokenIn;
     TokenOut tokenOut;
+    uint256 constant TOKEN_IN_AMOUNT = 3000;
+    uint256 constant TOKEN_OUT_AMOUNT = 5000;
 
     address public LIQUIDITY_PROVIDER = makeAddr("lp1");
 
@@ -23,22 +25,30 @@ contract LiquidityPoolTest is Test {
         tokenOut = TokenOut(token1);
     }
 
+    modifier mintedUser() {
+        tokenIn.mint(LIQUIDITY_PROVIDER, TOKEN_IN_AMOUNT * 2);
+        tokenOut.mint(LIQUIDITY_PROVIDER, TOKEN_OUT_AMOUNT * 2);
+        _;
+    }
+
+    modifier allowed() {
+        vm.startPrank(LIQUIDITY_PROVIDER);
+        tokenIn.approve(address(liquidityPool), 3000);
+        tokenOut.approve(address(liquidityPool), 5000);
+        vm.stopPrank();
+        _;
+    }
+
     function testIsDefined() public view {
         assert(address(liquidityPool) != address(0));
     }
 
-    function testCanDeposit() public {
-        uint256 amount1 = 3000;
-        uint256 amount2 = 5000;
-        tokenIn.mint(LIQUIDITY_PROVIDER, amount1 * 2);
-        tokenOut.mint(LIQUIDITY_PROVIDER, amount2 * 2);
-
-        vm.startPrank(LIQUIDITY_PROVIDER);
-        tokenIn.approve(address(liquidityPool), amount1);
-        tokenOut.approve(address(liquidityPool), amount2);
-
-        uint256 share = liquidityPool.deposit(amount1, amount2);
-        vm.stopPrank();
+    function testCanDeposit() public mintedUser allowed {
+        vm.prank(LIQUIDITY_PROVIDER);
+        uint256 share = liquidityPool.deposit(
+            TOKEN_IN_AMOUNT,
+            TOKEN_OUT_AMOUNT
+        );
 
         assert(share > 0);
         assert(share == 3872);
@@ -50,18 +60,9 @@ contract LiquidityPoolTest is Test {
         assert(contractBalance1 == 5000);
     }
 
-    function testCannotDepositIfShareIsTooSmall() public {
-        uint256 amount1 = 0;
-        uint256 amount2 = 1;
-        tokenIn.mint(LIQUIDITY_PROVIDER, amount1 * 2);
-        tokenOut.mint(LIQUIDITY_PROVIDER, amount2 * 2);
-
-        vm.startPrank(LIQUIDITY_PROVIDER);
-        tokenIn.approve(address(liquidityPool), amount1);
-        tokenOut.approve(address(liquidityPool), amount2);
-
+    function testCannotDepositIfShareIsTooSmall() public mintedUser allowed {
+        vm.prank(LIQUIDITY_PROVIDER);
         vm.expectRevert(LiquidityPool.Lp_ShareTooSmall.selector);
-        liquidityPool.deposit(amount1, amount2);
-        vm.stopPrank();
+        liquidityPool.deposit(0, TOKEN_OUT_AMOUNT);
     }
 }

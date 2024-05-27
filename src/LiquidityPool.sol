@@ -17,7 +17,7 @@ contract LiquidityPool is ERC20, ERC20Burnable, Ownable, ReentrancyGuard {
 
     ERC20 public s_token0;
     ERC20 public s_token1;
-    uint256 public s_reserve0; //
+    uint256 public s_reserve0;
     uint256 public s_reserve1;
 
     uint256 public fee = 30; // represents 0.30%
@@ -35,6 +35,9 @@ contract LiquidityPool is ERC20, ERC20Burnable, Ownable, ReentrancyGuard {
         uint256 _amount0,
         uint256 _amount1
     ) external nonReentrant returns (uint256 shares) {
+        /*
+            if reserves are not empty (without any deposit), the AMM have to be calculated
+        */
         if (s_reserve0 > 0 || s_reserve1 > 0) {
             if (_amount0 * s_reserve1 != _amount1 * s_reserve0) {
                 revert Lp_NonCPMMProduct();
